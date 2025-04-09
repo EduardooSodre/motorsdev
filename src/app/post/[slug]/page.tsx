@@ -1,3 +1,4 @@
+// pages/post/[slug].tsx  
 import { Hero } from "@/components/hero";
 import styles from "./styles.module.scss";
 import { getItemBySlug } from "@/utils/actions/get-data";
@@ -5,20 +6,29 @@ import { PostProps } from "@/utils/post.type";
 import { Phone } from "lucide-react";
 import { Container } from "@/components/container";
 import Image from "next/image";
-import { Metadata } from "next";
+import { Metadata } from "next/types";
+import { redirect } from "next/navigation";
+
+interface PageParams {
+  slug: string;
+}
 
 export async function generateMetadata({
-  params: { slug },
+  params,
 }: {
-  params: { slug: string };
+  params: Promise<PageParams>;
 }): Promise<Metadata> {
+  const resolvedParams = await params;
+  const { slug } = resolvedParams;
+
   try {
-    const { objects }: PostProps = await getItemBySlug(slug).catch(() => {
-      return {
-        title: "MotorsMotors - Sua oficina especializada",
-        description: "Oficina de carros em Limeira",
-      };
-    });
+    const data: PostProps = await getItemBySlug(slug);
+
+    if (!data) {
+      redirect('/'); // Redireciona para a página de erro se o post não for encontrado  
+    }
+
+    const { objects } = data;
 
     return {
       title: `MotorsMotors - ${objects[0].title}`,
@@ -31,29 +41,33 @@ export async function generateMetadata({
       robots: {
         index: true,
         follow: true,
-        nocache: true,
-        googleBot: {
-          index: true,
-          follow: true,
-          noimageindex: true,
-        },
       },
     };
   } catch (err) {
+    console.error(err);
     return {
-      title: "MotorsMotors - Sua oficina especializada",
-      description: "Oficina de carros em Limeira",
+      title: "MotorsMotors - Erro de Carregamento",
+      description: "Erro ao carregar os dados do post.",
     };
   }
 }
 
 export default async function Page({
-  params: { slug },
+  params,
 }: {
-  params: { slug: string };
+  params: Promise<PageParams>;
 }) {
-  const { objects }: PostProps = await getItemBySlug(slug);
-  // console.log(JSON.stringify(objects, null, 2));
+  const resolvedParams = await params;
+  const { slug } = resolvedParams;
+
+  // Buscando dados  
+  const data: PostProps = await getItemBySlug(slug);
+
+  if (!data) {
+    redirect('/'); // Redireciona para a página de erro  
+  }
+
+  const { objects } = data;
 
   return (
     <>
@@ -64,7 +78,6 @@ export default async function Page({
         bannerUrl={objects[0].metadata.banner.url}
         icon={<Phone size={18} color="#FFF" />}
       />
-
       <Container>
         <section className={styles.about}>
           <article className={styles.innerAbout}>
@@ -79,7 +92,9 @@ export default async function Page({
               <a
                 href={objects[0].metadata.description.button_url as string}
                 target="_blank"
-                className={styles.link}>
+                rel="noopener noreferrer"
+                className={styles.link}
+              >
                 {objects[0].metadata.description.button_title}
               </a>
             )}
@@ -100,4 +115,4 @@ export default async function Page({
       </Container>
     </>
   );
-}
+}  

@@ -35,11 +35,9 @@ export async function getSubMenu() {
 export async function getItemBySlug(itemSlug: string) {
   const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/objects`;
 
-  //Definindo o objeto de consulta pelo slug
+  // Definindo o objeto de consulta pelo slug
   const queryParams = new URLSearchParams({
-    query: JSON.stringify({
-      slug: itemSlug,
-    }),
+    query: JSON.stringify({ slug: itemSlug }),
     props: "slug, title, content, metadata",
     read_key: process.env.READ_KEY as string,
   });
@@ -50,12 +48,12 @@ export async function getItemBySlug(itemSlug: string) {
     const res = await fetch(url, { next: { revalidate: 120 } });
 
     if (!res.ok) {
-      throw new Error("Failed get item by slug");
+      return null; // Retorne null se a requisição falhar
     }
     return res.json();
   } catch (err) {
     console.error(err);
-    // Redirecionando para a página inicial em caso de erro
-    redirect("/");
+    // Retorne null em caso de erro ao tentar buscar o item
+    return null;
   }
 }
